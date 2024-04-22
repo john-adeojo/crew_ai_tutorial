@@ -1,0 +1,3 @@
+crewai[tools]==0.28.8
+openai==1.23.2
+PyYAML==6.0.1
