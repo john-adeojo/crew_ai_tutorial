@@ -2,13 +2,16 @@ import os
 from crewai import Agent, Crew, Process, Task
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from langchain_openai import ChatOpenAI
+import argparse
 import yaml
 import os
-from backstory import backstory_planner, backstory_searcher, backstory_reporter, backstory_integration
+from tasks import task_planner, task_searcher, task_reporter, task_integration
+from backstory import backstory_planner, backstory_searcher, backstory_integration, backstory_reporter
 from langchain_openai import ChatOpenAI
 
-query = """How many Germans live in the colonial
-holding in Aruba’s continent that was governed by Prazeres’s country?"""
+# query = """Who succeeded the first President of
+# Namibia?
+# """
 
 def load_config(file_path):
     with open(file_path, 'r') as file:
@@ -25,14 +28,9 @@ INFERENCE_SERVER_URL = os.getenv("INFERENCE_SERVER_URL")
 serper_tool = SerperDevTool()
 website_search_tool = ScrapeWebsiteTool()
 
-manager_llm = ChatOpenAI(temperature=0.7, model="gpt-4-0125-preview")
-llm = ChatOpenAI(temperature=0.7, model="gpt-3.5-turbo")
+manager_llm = ChatOpenAI(temperature=0, model="gpt-4-turbo")
+llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
 
-# OPENAI_MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
-# OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
-
-# manager_llm = ChatOpenAI(temperature=0, model=OPENAI_MODEL_NAME, openai_api_base=OPENAI_API_BASE)
-# llm =  ChatOpenAI(temperature=0, model=OPENAI_MODEL_NAME, openai_api_base=OPENAI_API_BASE)
 
 # Define the agents
 planning_agent = Agent(
@@ -42,7 +40,7 @@ planning_agent = Agent(
     verbose=True,
     llm=llm,
     cache=True,
-    allow_delegation=False,
+    allow_delegation=True,
 )
 
 search_agent = Agent(
@@ -53,17 +51,17 @@ search_agent = Agent(
     verbose=True,
     llm=llm,
     cache=True,
-    allow_delegation=False
+    allow_delegation=True
 )
 
 integration_agent = Agent(
     role='Integration',
-    goal="Craft a unified answer to multifaceted questions.",
+    goal="Organise and sythesize information from multiple sources",
     backstory=backstory_integration,
     verbose=True,
     llm=llm,
     cache=True,
-    allow_delegation=False
+    allow_delegation=True
 )
 
 reporting_agent = Agent(
@@ -73,51 +71,60 @@ reporting_agent = Agent(
     verbose=True,
     llm=llm,
     cache=True,
-    allow_delegation=False
+    allow_delegation=True
 )
 
 
+def main(query):
 
-planning_task = Task(
-    description=f'''For the following query: {query}, Deconstruct complex queries into simpler, interconnected sub-questions to guide a comprehensive and methodical investigative process''',
-    expected_output='A detailed view of the sub-questions and their relationships to the main question and how to proceed with the investigation to answer the main question',
-    agent=planning_agent,
+    planning_task = Task(
+        description=task_planner.format(query=query),
+        expected_output='A detailed view of the sub-questions and their relationships to the main question and how to proceed with the investigation to answer the main question',
+        agent=planning_agent,
+        
+    )
 
-)
+    search_task = Task(
+        description=task_searcher.format(query=query),
+        expected_output='Specific information and sources relevant to the sub-questions identified by the Planner Agent',
+        agent=search_agent,
+        tools=[serper_tool, website_search_tool],
+        context=[planning_task]    
+    )
 
-search_task = Task(
-    description=f'''For the following query: {query}, Conduct targeted searches to gather specific information needed to construct the context for addressing complex multi-hop questions''',
-    expected_output='Specific information and sources relevant to the sub-questions identified by the Planner Agent',
-    agent=search_agent,
-    tools=[serper_tool, website_search_tool],
-    context=[planning_task]    
-)
+    integration_task = Task(
+        description=task_integration.format(query=query),
+        expected_output='All the information gathered from the searcher agent organised and integrated with website links and references.',
+        agent=integration_agent,
+        context=[search_task, planning_task]
+    )
 
-integration_task = Task(
-    description=f'''For the following query: {query}, Synthesize gathered information into a coherent response that fully addresses the user's original multi-hop question.''',
-    expected_output='A comprehensive, integrated response that addresses the user\'s original multi-hop question',
-    agent=integration_agent,
-    context=[search_task]
-)
-
-reporting_task = Task(
-    description=f'''For the following query: {query}, Deliver a clear, accurate, and comprehensive response to the user, highlighting structured investigation outcomes and further exploration paths.''',
-    expected_output='A clear, accurate, and comprehensive response to the user, highlighting structured investigation outcomes and further exploration paths',
-    agent=reporting_agent,
-    context=[integration_task, search_task, planning_task]
-)
+    reporting_task = Task(
+        description=task_reporter.format(query=query),
+        expected_output='A clear, accurate, and concise response to the user, with references and website links to sources of information.',
+        agent=reporting_agent,
+        context=[integration_task, search_task, planning_task]
+    )
 
 
-crew = Crew(
-    agents=[planning_agent, search_agent, integration_agent, reporting_agent],
-    process=Process.hierarchical,
-    manager_llm=manager_llm,
-    memory=True,
-    tasks=[planning_task, search_task, integration_task, reporting_task]
-)
+    crew = Crew(
+        agents=[planning_agent, search_agent, integration_agent, reporting_agent],
+        process=Process.hierarchical,
+        manager_llm=manager_llm,
+        memory=True,
+        tasks=[planning_task, search_task, integration_task, reporting_task]
+    )
 
-try:
-    result = crew.kickoff()
-    print(result)
-except Exception as e:
-    print("failed to kickoff the crew: {e}")
+    try:
+        result = crew.kickoff()
+        print(result)
+    except Exception as e:
+        print("failed to kickoff the crew: {e}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run a query through CrewAI agents.')
+    parser.add_argument('query', type=str, help='The query to be answered')
+
+    args = parser.parse_args()
+    main(args.query)
