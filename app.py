@@ -9,9 +9,6 @@ from tasks import task_planner, task_searcher, task_reporter, task_integration
 from backstory import backstory_planner, backstory_searcher, backstory_integration, backstory_reporter
 from langchain_openai import ChatOpenAI
 
-# query = """Who succeeded the first President of
-# Namibia?
-# """
 
 def load_config(file_path):
     with open(file_path, 'r') as file:
@@ -21,7 +18,7 @@ def load_config(file_path):
 
 # loads API keys from config.yaml
 load_config(file_path="./config.yaml")
-INFERENCE_SERVER_URL = os.getenv("INFERENCE_SERVER_URL")
+# INFERENCE_SERVER_URL = os.getenv("INFERENCE_SERVER_URL")
 
 
 # Define the tools
@@ -29,7 +26,7 @@ serper_tool = SerperDevTool()
 website_search_tool = ScrapeWebsiteTool()
 
 manager_llm = ChatOpenAI(temperature=0, model="gpt-4-turbo")
-llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
+llm = ChatOpenAI(temperature=0, model="gpt-4-turbo")
 
 
 # Define the agents

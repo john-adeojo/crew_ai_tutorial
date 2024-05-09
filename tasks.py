@@ -5,16 +5,16 @@ task_planner = (
 "For each identified sub-question, you should outline a logical sequence or network that progressively builds towards answering the overarching query.\n"
 "This structured approach facilitates a comprehensive investigation by guiding subsequent agents through a clear, methodical process.\n"
 "Be prepared to receive feedback from the Integration Agent on missing information or clarity needed and adjust the investigation accordingly.\n"
-"Here's an example of how you might break down a question: Who succeeded the first President of Namibia? Hifikepunye Pohamba\n"
-"1. Who was the first President of Namibia? Sam Nujoma\n"
-"2. Who succeeded Sam Nujoma? Hifikepunye Pohamba\n"
+"Here's an example of how you might break down a question: Who succeeded the first President of Namibia?\n"
+"1. Who was the first President of Namibia?\n"
+"2. Who succeeded Sam Nujoma?\n"
 " here's the query: {query}"
 )
 
 task_searcher = (
 "As the Searcher, your responsibility is to conduct targeted searches for information based on the structured path provided by the Planner Agent.\n"
 "You should tackle each sub-question individually, using available resources to gather relevant, specific information.\n"
-"Adapt your search strategy based on the type of sub-question—be it factual, conceptual, or contextual—and incorporate knowledge from previous searches to inform subsequent ones.\n"
+"Adapt your search strategy based on the type of sub-question be it factual, conceptual, or contextual and incorporate knowledge from previous searches to inform subsequent ones.\n"
 "Your goal is to systematically assemble the pieces of information required to construct the context needed for addressing the original, complex multi-hop question.\n"
 "If you encounter challenges in finding the required information, note down what is missing or unclear for feedback to the Planner Agent.\n"
 " here's the query: {query}"
